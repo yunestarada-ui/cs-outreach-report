@@ -306,18 +306,24 @@ function loadData() {
 }
 
 function processData(raw) {
-  allData = raw.map(r => ({
-    week:    r["Week"] || getWeekLabel(r["Date"]) || "This week",
-    date:    r["Date"] || "",
-    agent:   r["Agent"] || r["Agent "] || "",
-    client:  r["Client "] || r["Client"] || r["Client Domain"] || "",
-    segment: r["Segment"] || r["Segment "] || "",
-    feature: r["Feature Pitched"] || r["Feature Pitched "] || "",
-    before:  r["Adoption Score Before"] || r["Adoption Score Before "] !== "" ? parseFloat(r["Adoption Score Before"] || r["Adoption Score Before "]) : null,
-    after:   r["Adoption Score After"] || r["Adoption Score After "]  !== "" ? parseFloat(r["Adoption Score After"] || r["Adoption Score After "])  : null,
-    response:r["Client Response"] || r["Client Response "] || "",
-    notes:   r["Notes"] || ""
-  }));
+  allData = raw.map(r => {
+    const g = (k) => (r[k] || r[k + " "] || "").toString().trim();
+    const gf = (k) => { const v = parseFloat(g(k)); return isNaN(v) ? null : v; };
+    return {
+      week:     g("Week") || getWeekLabel(g("Date")) || "This week",
+      date:     g("Date"),
+      agent:    g("Agent"),
+      client:   g("Client") || g("Client Domain"),
+      email:    g("Client email") || g("Client Email"),
+      priority: g("Prirotiy") || g("Priority"),
+      segment:  g("Segment"),
+      feature:  g("Feature Pitched"),
+      before:   gf("Adoption Score Before"),
+      after:    gf("Adoption Score After"),
+      response: g("Client Response"),
+      notes:    g("Notes")
+    };
+  });
 
   weeks = [...new Set(allData.map(r => r.week || 'This week'))];
   if (!weeks.length) { showError("Sheet has no data yet. Add entries and refresh."); return; }
