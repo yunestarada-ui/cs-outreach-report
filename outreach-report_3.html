@@ -376,11 +376,16 @@ function renderMetrics() {
   const avgDelta = withDelta.length ? Math.round(withDelta.reduce((s,r) => s + (r.after - r.before), 0) / withDelta.length) : null;
   const rr = total ? Math.round(responded / total * 100) : 0;
 
+  const high = d.filter(r => r.priority && r.priority.toLowerCase() === 'high').length;
+  const med  = d.filter(r => r.priority && r.priority.toLowerCase() === 'medium').length;
+  const low  = d.filter(r => r.priority && r.priority.toLowerCase() === 'low').length;
+
   document.getElementById('metricsRow').innerHTML = `
     <div class="metric"><div class="metric-label">Total outreach</div><div class="metric-value">${total}</div><div class="metric-sub">emails this week</div></div>
     <div class="metric"><div class="metric-label">Response rate</div><div class="metric-value ${rr >= 50 ? 'green' : 'amber'}">${rr}%</div><div class="metric-sub">${responded} of ${total} replied</div></div>
     <div class="metric"><div class="metric-label">Onboarded</div><div class="metric-value green">${onboarded}</div><div class="metric-sub">activated this week</div></div>
     <div class="metric"><div class="metric-label">Avg score delta</div><div class="metric-value ${avgDelta > 0 ? 'green' : avgDelta < 0 ? 'red' : ''}">${avgDelta != null ? (avgDelta > 0 ? '+' : '') + avgDelta : '—'}</div><div class="metric-sub">${withDelta.length} clients updated</div></div>
+    <div class="metric"><div class="metric-label">Priority split</div><div class="metric-value red">${high}<span style="font-size:14px;font-weight:400;color:#aaa"> H</span></div><div class="metric-sub">${med} Medium · ${low} Low</div></div>
   `;
 }
 
@@ -394,6 +399,15 @@ function renderFeatureChart() {
     data: { labels: Object.keys(counts).map(short), datasets: [{ data: Object.values(counts), backgroundColor: '#1a56db', borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } }, x: { grid: { display: false }, ticks: { font: { size: 11 }, autoSkip: false, maxRotation: 30 } } } }
   });
+}
+
+function priorityColor(p) {
+  if (!p) return 'b-gray';
+  const pl = p.toLowerCase();
+  if (pl === 'high') return 'b-red';
+  if (pl === 'medium') return 'b-amber';
+  if (pl === 'low') return 'b-green';
+  return 'b-gray';
 }
 
 function responseColor(r) {
@@ -501,13 +515,15 @@ function renderDetail() {
   if (!d.length) { document.getElementById('detailTable').innerHTML = '<div class="state">No entries for this week.</div>'; return; }
   document.getElementById('detailTable').innerHTML = `
     <table style="min-width:750px">
-      <thead><tr><th>Date</th><th>Agent</th><th>Client</th><th>Segment</th><th>Feature pitched</th><th>Before</th><th>After</th><th>Delta</th><th>Response</th></tr></thead>
+      <thead><tr><th>Date</th><th>Agent</th><th>Client</th><th>Email</th><th>Priority</th><th>Segment</th><th>Feature pitched</th><th>Before</th><th>After</th><th>Delta</th><th>Response</th></tr></thead>
       <tbody>${d.map(r => {
         const delta = r.before != null && r.after != null ? r.after - r.before : null;
         return `<tr>
           <td style="color:#888">${r.date || '—'}</td>
           <td>${r.agent || '—'}</td>
           <td style="font-weight:600">${r.client || '—'}</td>
+          <td style="color:#888;font-size:11px">${r.email || '—'}</td>
+          <td>${r.priority ? `<span class="badge ${priorityColor(r.priority)}">${r.priority}</span>` : '—'}</td>
           <td>${r.segment ? `<span class="badge b-purple">${r.segment}</span>` : '—'}</td>
           <td>${r.feature || '—'}</td>
           <td>${r.before != null ? r.before : '—'}</td>
